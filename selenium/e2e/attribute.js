@@ -14,8 +14,8 @@ describe('attributes', () => {
 
   beforeEach(async () => {
     driver.manage().deleteAllCookies();
-    await driver.get('http://localhost:8081/admin');
-    // await driver.get('http://150.165.75.99:8081/admin');
+    await driver.get('http://localhost:9990/admin');
+    // await driver.get('http://150.165.75.99:9990/admin');
     await driver.findElement(By.id('_username')).sendKeys('sylius');
     await driver.findElement(By.id('_password')).sendKeys('sylius');
     await driver.findElement(By.css('.primary')).click();
@@ -32,14 +32,20 @@ describe('attributes', () => {
     const text = await driver.findElement(By.css('a[href="/admin/product-attributes/text/new"]'));
     await text.click();
 
-    const code = await driver.findElement(By.id('sylius_product_attribute_code'));
-    await code.sendKeys(codeAtt);
+    if (codeAtt) {
+      const code = await driver.findElement(By.id('sylius_product_attribute_code'));
+      await code.sendKeys(codeAtt);
+    }
 
+    if (posAtt){
     const pos = await driver.findElement(By.id('sylius_product_attribute_position'));
     await pos.sendKeys(posAtt);
+    }
 
-    const name = await driver.findElement(By.id('sylius_product_attribute_translations_en_US_name'));
-    await name.sendKeys(nameAtt);
+    if (nameAtt) {
+      const name = await driver.findElement(By.id('sylius_product_attribute_translations_en_US_name'));
+      await name.sendKeys(nameAtt);
+    }
 
     const button = await driver.findElement(By.css('*[class^="ui labeled icon primary button"]'));
     await button.click();
@@ -139,8 +145,8 @@ describe('attributes', () => {
     assert(result.includes('There are no results to display'));
   });
 
-  it.only('Excluir atributo existente', async () => {
-    //await createAttribute('silk-fabric-type-delete', 'silk fabric type delete', '5');
+  it('Excluir atributo existente', async () => {
+    await createAttribute('silk-fabric-type-delete', 'silk fabric type delete', '5');
 
     const att = await driver.findElement(By.css('a[href="/admin/product-attributes/"]')); 
     await att.click();
@@ -156,5 +162,41 @@ describe('attributes', () => {
 
     assert(result.includes('Product attribute has been successfully deleted.'));
   }); 
+
+  it('Tentar criar atributo sem nome: erro', async () => {
+    await createAttribute('silk-fabric-type-no-name', null, '6');
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('This form contains errors.'));
+  });
+
+  it('Tentar criar atributo sem código: erro', async () => {
+    await createAttribute(null, 'silk fabric type no code', '7');
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('This form contains errors.'));
+  });
+
+  it('Tentar criar atributo sem posição: sucesso, pos automática', async () => {
+    await createAttribute('silk-fabric-type-no-pos', 'silk fabric type no pos', null);
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('Product attribute has been successfully created.'));
+  });
+
+  it('Tentar criar atributo passando posição negativa: erro', async () => {
+    await createAttribute('silk-fabric-type-neg-pos', 'silk fabric type neg pos', '-1');
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('This form contains errors.'));
+  });
 
 });
