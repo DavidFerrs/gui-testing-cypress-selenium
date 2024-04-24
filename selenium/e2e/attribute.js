@@ -1,4 +1,4 @@
-const { Builder, By, until } = require('selenium-webdriver');
+const { Builder, By, until, WebDriverWait } = require('selenium-webdriver');
 const assert = require('assert');
 
 describe('attributes', () => {
@@ -14,16 +14,39 @@ describe('attributes', () => {
 
   beforeEach(async () => {
     driver.manage().deleteAllCookies();
-    await driver.get('http://localhost:9990/admin');
-    // await driver.get('http://150.165.75.99:9990/admin');
+    await driver.get('http://localhost:8081/admin');
+    // await driver.get('http://150.165.75.99:8081/admin');
     await driver.findElement(By.id('_username')).sendKeys('sylius');
     await driver.findElement(By.id('_password')).sendKeys('sylius');
     await driver.findElement(By.css('.primary')).click();
     // await driver.sleep(1000);
   });
 
+  async function createAttribute(codeAtt, nameAtt, posAtt) {
+    const att = await driver.findElement(By.css('a[href="/admin/product-attributes/"]'));
+    await att.click();
+
+    const create = await driver.findElement(By.css('*[class^="ui labeled icon top right floating dropdown button primary link"]'));
+    await create.click();
+
+    const text = await driver.findElement(By.css('a[href="/admin/product-attributes/text/new"]'));
+    await text.click();
+
+    const code = await driver.findElement(By.id('sylius_product_attribute_code'));
+    await code.sendKeys(codeAtt);
+
+    const pos = await driver.findElement(By.id('sylius_product_attribute_position'));
+    await pos.sendKeys(posAtt);
+
+    const name = await driver.findElement(By.id('sylius_product_attribute_translations_en_US_name'));
+    await name.sendKeys(nameAtt);
+
+    const button = await driver.findElement(By.css('*[class^="ui labeled icon primary button"]'));
+    await button.click();
+  }
+
   // Remove .only and implement others test cases!
-  it.only('testing edit attribute position', async () => {
+  it('testing edit attribute position', async () => {
     // Click in attributes in side menu
     await driver.findElement(By.linkText('Attributes')).click();
 
@@ -51,13 +74,87 @@ describe('attributes', () => {
     assert(bodyText.includes('Product attribute has been successfully updated.'));
   });
 
-  it('test case 2', async () => {
-    // Implement your test case 2 code here
+  //!OK
+  it('Criar atributo novo', async () => { //!OK
+
+    await createAttribute('silk-fabric-type-new', 'silk fabric type new', '2');
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert((result).includes('Product attribute has been successfully created.'));
   });
 
-  it('test case 3', async () => {
-    // Implement your test case 3 code here
+  //!OK
+  it('Criar atributo novo com código de atributo já existente: erro', async () => {
+    
+    // CRIANDO O ATRIBUTO PELA PRIMEIRA VEZ
+    await createAttribute('silk-fabric-type-dupped', 'silk fabric type dupped', '3');
+
+
+    // CRIANDO O ATRIBUTO PELA SEGUNDA VEZ
+    await createAttribute('silk-fabric-type-dupped', 'silk fabric type dupped', '3');
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('This form contains errors.'));
+    assert(result.includes('This code is already in use.'));
   });
 
-  // Implement the remaining test cases in a similar manner
+  //!OK
+  it('Filtrar atributo que existe', async () => {
+
+    await createAttribute('silk-fabric-type-filter', 'silk fabric type filter', '4');
+
+    const att = await driver.findElement(By.css('a[href="/admin/product-attributes/"]')); 
+    await att.click();
+
+    const crit = await driver.findElement(By.id('criteria_code_value'));
+    await crit.sendKeys('silk-fabric-type-filter');
+
+    const button = await driver.findElement(By.css('*[class^="ui blue labeled icon button"]'));
+    await button.click();
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('silk-fabric-type-filter'));
+  });
+
+  //!OK
+  it('Filtrar atributo que não existe', async () => {
+    const att = await driver.findElement(By.css('a[href="/admin/product-attributes/"]')); 
+    await att.click();
+
+    const crit = await driver.findElement(By.id('criteria_code_value'));
+    await crit.sendKeys('silk-fabric-type-filter-non-existent');
+
+    const button = await driver.findElement(By.css('*[class^="ui blue labeled icon button"]'));
+    await button.click();
+
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('There are no results to display'));
+  });
+
+  it.only('Excluir atributo existente', async () => {
+    //await createAttribute('silk-fabric-type-delete', 'silk fabric type delete', '5');
+
+    const att = await driver.findElement(By.css('a[href="/admin/product-attributes/"]')); 
+    await att.click();
+
+    const button = await driver.findElement(By.css('*[class^="ui red labeled icon button"]'));
+    await button.click();  
+
+    const confirm = await driver.findElement(By.css('*[class^="ui green ok inverted button"]'));
+    await confirm.click();
+  
+    const body = await driver.findElement(By.tagName('body'));
+    const result = await body.getText();
+
+    assert(result.includes('Product attribute has been successfully deleted.'));
+  }); 
+
 });
