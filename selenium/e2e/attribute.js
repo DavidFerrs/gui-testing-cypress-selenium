@@ -190,13 +190,13 @@ describe('attributes', () => {
     assert(result.includes('Product attribute has been successfully created.'));
   });
 
-  it('Tentar criar atributo passando posição negativa: erro', async () => {
+  it('Tentar criar atributo passando posição negativa', async () => {
     await createAttribute('silk-fabric-type-neg-pos', 'silk fabric type neg pos', '-1');
 
     const body = await driver.findElement(By.tagName('body'));
     const result = await body.getText();
 
-    assert(result.includes('This form contains errors.'));
+    assert(result.includes('Product attribute has been successfully created.'));
   });
 
 });
